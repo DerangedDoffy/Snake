@@ -39,7 +39,6 @@ void handle_input(void);
 
 void move_snake(void);
 void grow_snake(void);
-// todo: rename
 bool is_snake_collision(void);
 bool is_snake_eating(void);
 
@@ -55,7 +54,6 @@ void main()
         render();
         handle_input();
         update();
-        // todo: improve game loop implementation
         if (DEBUG)
         {
             Sleep(150);
@@ -197,11 +195,8 @@ void update(void)
     {
         grow_snake();
         spawn_fruit();
-        // todo: implement check if fruit spawned under snake
         game.score = (snake.size - DEFAULT_STARTING_SIZE) * 10;
     }
-
-    // todo: anything else?
 }
 
 // Records key presses
