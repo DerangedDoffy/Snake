@@ -9,6 +9,7 @@
 #define MAX_X 40
 #define MAX_Y 20
 #define DEFAULT_STARTING_SIZE 3
+#define DEBUG false
 
 typedef struct
 {
@@ -21,6 +22,7 @@ typedef struct
 {
     bool running;
     int score;
+    int highscore;
 } Game;
 
 Game game;
@@ -29,6 +31,7 @@ COORD fruit;
 
 void init_console(void);
 void init_game(void);
+void cleanup_game(void);
 
 void render(void);
 void update(void);
@@ -53,8 +56,18 @@ void main()
         handle_input();
         update();
         // todo: improve game loop implementation
-        Sleep(30);
+        if (DEBUG)
+        {
+            Sleep(150);
+            printf("\n%d, %d", snake.body[0].X, snake.body[0].Y);
+        }
+        else
+        {
+            Sleep(30);
+        }
     }
+
+    cleanup_game();
 }
 
 void init_console(void)
@@ -76,11 +89,36 @@ void init_console(void)
 void init_game(void)
 {
     game = (Game){true, 0};
+    FILE *fptr;
+    fptr = fopen("highscore", "r");
+    if (fptr == NULL)
+    {
+        fptr = fopen("highscore", "a");
+    }
+    else
+    {
+        fscanf(fptr, "%d", &game.highscore);
+    }
+    fclose(fptr);
+
     snake = (Snake){malloc(DEFAULT_STARTING_SIZE * sizeof(COORD)), DEFAULT_STARTING_SIZE, rand() % 4 + 1};
     for (int i = 0; i < snake.size; i++)
         snake.body[i] = (COORD){MAX_X / 2, MAX_Y / 2};
 
     spawn_fruit();
+}
+
+void cleanup_game()
+{
+    if (game.score <= game.highscore)
+    {
+        return;
+    }
+
+    FILE *fptr;
+    fptr = fopen("highscore", "w");
+    fprintf(fptr, "%d", game.score);
+    fclose(fptr);
 }
 
 // todo: refactor, should not have to overwrite walls as they never change
@@ -95,7 +133,9 @@ void render(void)
 
     // Scoreboard
     printf("\n");
-    printf("Score:%d", game.score);
+    printf("Score: %d", game.score);
+    printf("\n");
+    printf("High Score: %d", game.highscore);
     printf("\n");
 
     // Draw top wall
@@ -154,8 +194,13 @@ void update(void)
         game.running = false;
 
     if (is_snake_eating())
+    {
         grow_snake();
-    
+        spawn_fruit();
+        // todo: implement check if fruit spawned under snake
+        game.score = (snake.size - DEFAULT_STARTING_SIZE) * 10;
+    }
+
     // todo: anything else?
 }
 
@@ -226,19 +271,35 @@ void grow_snake(void)
 
 bool is_snake_collision(void)
 {
-    // todo: implement (HINT: can not collide with self or walls)
+    for (int i = 1; i < snake.size; i++)
+    {
+        if (snake.body[0].X == snake.body[i].X && snake.body[0].Y == snake.body[i].Y)
+            return true;
+    }
+
+    if (snake.body[0].X > MAX_X || snake.body[0].X < 1)
+        return true;
+
+    if (snake.body[0].Y > MAX_Y + 1 || snake.body[0].Y < 0)
+        return true;
+
     return false;
 }
 
 bool is_snake_eating(void)
 {
-    // todo: implement (HINT: if snake eats, call spawn_fruit())
-    return false;
+    return snake.body[0].X == fruit.X && snake.body[0].Y == fruit.Y;
 }
 
 void spawn_fruit(void)
-{
+{   
     int x = rand() % (MAX_X) + 1;
     int y = rand() % (MAX_Y) + 1;
+    while (snake.body[0].X == x && snake.body[0].Y == y)
+    {
+        x = rand() % (MAX_X) + 1;
+        y = rand() % (MAX_Y) + 1; 
+    }
+        
     fruit = (COORD){x, y};
 }
