@@ -1,107 +1,86 @@
+#include <conio.h>
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <stdbool.h>
-#include <conio.h>
-#include <windows.h>
 #include <string.h>
 #include <time.h>
+#include <windows.h>
 
-#define MAX_X 40 // 0 -> 40
-#define MAX_Y 20 // 0 -> 20
-#define DEFAULT_STARTING_SIZE 10
+#define MAX_X 40
+#define MAX_Y 20
+#define DEFAULT_STARTING_SIZE 3
 
-// Global variables
-bool running;
-COORD *snake;
-int size = DEFAULT_STARTING_SIZE;
+typedef struct 
+{
+    COORD *body;
+    int size;
+    int direction;
+} Snake;
+
+typedef struct 
+{
+    bool running;
+    int score;
+} Game;
+
+Game game;
+Snake snake;
 COORD fruit;
-int direction;
-int score;
 
-/*
-    snake 
-    {
-        body COORD[]
-        direction int
-        size int
-    }
-*/
-
-
-// Function prototypes
+void init_console(void);
 void init_game(void);   
-void grow(void);
-void fruit_spawn(void);
-void draw(void);        
-void input(void);       
+
+void render(void);        
 void update(void);        
+void handle_input(void); 
+
+void grow(void);
+void spawn_fruit(void);
+
 
 void main()
 {
-    srand(time(NULL)); 
-    system("cls");
+    init_console();
+    init_game();
 
+    while (game.running)
+    {
+        render();
+        handle_input();
+        update();
+        // todo: improve game loop implementation
+        Sleep(30);
+    }
+}
+
+void init_console(void)
+{
+    // seed for random
+    srand(time(NULL)); 
+
+    // remove cursor
     HANDLE consoleHandle = GetStdHandle(STD_OUTPUT_HANDLE);
     CONSOLE_CURSOR_INFO info;
     info.dwSize = 1;
     info.bVisible = FALSE;
     SetConsoleCursorInfo(consoleHandle, &info);
 
-    init_game();
-    
-    // Main game loop
-    int count = 0;
-    while (running)
-    {
-        draw();
-        input();
-        update();
-        Sleep(30);
-        // count++;
-        // if (count > 5)
-        //     running = false;
-    }
-}
-
-// Spawns fruit 
-void fruit_spawn(void)
-{
-    int x = rand() % (MAX_X) + 1;
-    int y = rand() % (MAX_Y) + 1;
-    fruit = (COORD) {x, y};
+    system("cls");
 }
 
 // Sets the game up
 void init_game(void)
 {   
-    running = true;
-    // create snake
-    snake = malloc(DEFAULT_STARTING_SIZE * sizeof(COORD));
-    for (int i = 0; i < size; i++)
-    {
-        snake[i] = (COORD) {MAX_X/2, MAX_Y/2};
-    }
-
-    direction = 1; 
-    score = 0;
-
-    // Fruit spawn
-    fruit_spawn();
-}
-
-void grow(void)
-{
-    COORD* new_snake = realloc(snake, ++size * sizeof(COORD));
-    if (!new_snake) {
-        printf("Snake isn't growing");
-        running = false;
-        return ;
-    }
-    snake = new_snake;
+    game = (Game) { true, 0 };
+    snake = (Snake) { malloc(DEFAULT_STARTING_SIZE * sizeof(COORD)), DEFAULT_STARTING_SIZE,  rand() % 4 + 1};
+    for (int i = 0; i < snake.size; i++)
+        snake.body[i] = (COORD) {MAX_X/2, MAX_Y/2};
+    
+    spawn_fruit();
 }
 
 // Draws the game
-void draw(void)
+void render(void)
 {
     // Clears consle 
     HANDLE Screen;
@@ -112,7 +91,7 @@ void draw(void)
 
     // Scoreboard 
     printf("\n");
-    printf("Score:%d", score);
+    printf("Score:%d", game.score);
     printf("\n");
 
     // Draw top wall
@@ -129,7 +108,7 @@ void draw(void)
                 printf("#");
             
             // Drawing snake head
-            else if (j == snake[0].X && i == snake[0].Y)
+            else if (j == snake.body[0].X && i == snake.body[0].Y)
                 printf("@");
 
 
@@ -141,9 +120,9 @@ void draw(void)
             else
             {
                 int x = 0;
-                for (int k = 1; k < size; k++)
+                for (int k = 1; k < snake.size; k++)
                 {
-                    if (snake[k].X == j && snake[k].Y == i && x != 1){
+                    if (snake.body[k].X == j && snake.body[k].Y == i && x != 1){
                         printf("o");
                         x = 1;
                     }
@@ -162,57 +141,75 @@ void draw(void)
     printf("\n");
 }
 
+// // Updates movement, score
+// // Checks eat, collision, game over
+void update(void)
+{
+    for (int i = snake.size - 1; i > 0; i--)
+    {
+        snake.body[i] = snake.body[i-1];
+    }
+
+    switch(snake.direction)
+    {
+        case 1: //w
+            snake.body[0] = (COORD) {snake.body[0].X, --snake.body[0].Y};
+            break;
+        case 2: //a
+            snake.body[0] = (COORD) {--snake.body[0].X, snake.body[0].Y};
+            break;
+        case 3: //s
+            snake.body[0] = (COORD) {snake.body[0].X, ++snake.body[0].Y};
+            break;
+        case 4: //d
+            snake.body[0] = (COORD) {++snake.body[0].X, snake.body[0].Y};
+            break;
+        default:
+            break;
+    }
+}
+
 // Records key presses
-void input(void)
+void handle_input(void)
 {
     if (kbhit())
     {
         switch(tolower(getch()))
         {
             case 'w': 
-                if (direction != 3)
-                    direction = 1;
+                if (snake.direction != 3)
+                    snake.direction = 1;
                 break;
             case 'a':
-                if (direction != 4)
-                    direction = 2;
+                if (snake.direction != 4)
+                    snake.direction = 2;
                 break;
             case 's':
-                if (direction != 1)
-                    direction = 3;
+                if (snake.direction != 1)
+                    snake.direction = 3;
                 break;
             case 'd':
-                if (direction != 2)
-                    direction = 4;
+                if (snake.direction != 2)
+                    snake.direction = 4;
                 break;
         }
     }
 }
 
-// // Updates movement, score
-// // Checks eat, collision, game over
-void update(void)
+void grow(void)
 {
-    for (int i = size - 1; i > 0; i--)
-    {
-        snake[i] = snake[i-1];
+    COORD* new_body = realloc(snake.body, ++snake.size * sizeof(COORD));
+    if (!new_body) {
+        printf("Snake isn't growing (not realloced)");
+        game.running = false;
+        return ;
     }
+    snake.body = new_body;
+}
 
-    switch(direction)
-    {
-        case 1: //w
-            snake[0] = (COORD) {snake[0].X, --snake[0].Y};
-            break;
-        case 2: //a
-            snake[0] = (COORD) {--snake[0].X, snake[0].Y};
-            break;
-        case 3: //s
-            snake[0] = (COORD) {snake[0].X, ++snake[0].Y};
-            break;
-        case 4: //d
-            snake[0] = (COORD) {++snake[0].X, snake[0].Y};
-            break;
-        default:
-            break;
-    }
+void spawn_fruit(void)
+{
+    int x = rand() % (MAX_X) + 1;
+    int y = rand() % (MAX_Y) + 1;
+    fruit = (COORD) {x, y};
 }
