@@ -1,1 +1,1 @@
-This project is a Snake game in C I created using a dynamic array for the snake.
+This project is a Snake game coded in C created using a dynamic array for the snake.
