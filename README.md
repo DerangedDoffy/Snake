@@ -1,6 +1,6 @@
 # **C Snake**
 
-This project is a console-based Snake game implemented in C using the Windows Console API. The goal of the project is to demonstrate proficiency in low-level programming concepts such as memory management, data structures, input handling, and real-time game loops, all within a constrained environment.
+This project is a console-based Snake game implemented in C using the Windows Console API. The goal of the project is to demonstrate proficiency in programming concepts such as memory management, data structures, input handling, and real-time game loops, all within a constrained environment.
 The game features classic Snake mechanics including movement, growth, collision detection, scoring, and persistent high score tracking.
 
-![af51ah](https://github.com/user-attachments/assets/958a75c8-aef5-4316-977a-eab641151743)
+![Adobe Express - Untitled video - Made with Clipchamp (1)](https://github.com/user-attachments/assets/ab655ee8-8e80-461a-98e8-e2e5813f37b7)
